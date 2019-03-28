@@ -1,0 +1,37 @@
+open import Data.Nat hiding (pred)
+open import Data.Product hiding (∃)
+open import Data.Sum
+open import Data.Fin 
+open import Relation.Binary.PropositionalEquality
+open import Data.Empty
+open import Data.Bool hiding (_∨_)
+open import Data.Vec
+open import Data.List
+open import Data.Maybe
+open import PropLog
+
+
+record Clash {n m : ℕ} (f : Fin n → Fin m) : Set where
+       field
+         i j : Fin n
+         clash : f i ≡ f j
+
+data _<'_ : ℕ → ℕ → Set where
+     zero : {n : ℕ} → 0 <' suc n
+     suc : {n m : ℕ} → m <' n → suc m <' suc n
+
+insert : {n : ℕ} → (Fin n) → Fin (suc n) → Fin (suc n)
+insert x zero = suc x
+insert zero (suc y) = zero
+insert (suc x) (suc y) = suc (insert x y)
+
+lem : {m n : ℕ}(g : Fin n → Fin (suc m))(i : Fin (suc m)) →
+          (Σ (Fin n) (λ j → g j ≡ i)) ⊎ (Σ (Fin n → Fin m) (λ f → (k : Fin n) → g k ≡ insert (f k) i))
+lem g i = {!!}
+
+open Clash
+
+php : {m n : ℕ} → (m <' n) → (f : Fin n → Fin m) → Clash f
+php zero f with f zero
+php zero f | ()
+php (suc mn) f = {!!}

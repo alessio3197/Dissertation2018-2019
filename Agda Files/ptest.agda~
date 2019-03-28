@@ -1,0 +1,154 @@
+open import PropIso renaming (_<_ to nlt)
+open import Data.Fin.Arithmetic
+open import Data.Fin hiding (inject₁)
+open import Data.Nat
+open import Data.Bool
+open import Data.Product
+open import Data.Sum as Sum
+open import Relation.Binary.PropositionalEquality
+private
+  ψ₁ : {n : ℕ} → (p : Fin n → Bool) → Set
+  ψ₁ {n} p = Σ[ k ∶ Fin n × Fin n ] T (flt (proj₁ k) (proj₂ k)) × T (p (proj₁ k)) × T (p (proj₂ k))
+  ψ₂ : {n : ℕ} → (p : Fin n → Bool) → Set
+  ψ₂ {n} p = Σ[ k ∶ Fin n ] (T (p k) × ((j : Fin n) → j ≢ k → ¬ (T (p j))))
+  ψ₃ : {n : ℕ} → (p : Fin n → Bool) → Set
+  ψ₃ {n} p = (k : Fin n) → ¬ T (p k)
+  ψ : {n : ℕ} → (p : Fin n → Bool) → Set
+  ψ p = ψ₁ p ⊎ ψ₂ p ⊎ ψ₃ p
+Pigeon : {n m : ℕ} → (f : Fin n → Fin m) → Set
+Pigeon {n} f = Σ[ k ∶ Fin n × Fin n ] (T (flt (proj₁ k) (proj₂ k)) × f (proj₁ k) ≡ f (proj₂ k))
+tri-choice-step-c2 : {n : ℕ} → (p : Fin (suc n) → Bool) → ψ₂ (p ∘ suc) → T (p zero) ⊎ ¬ (T (p zero))
+                               → ψ₁ p ⊎ ψ₂ p
+tri-choice-step-c2 p (x , (y , z)) (inj₁ x') = inj₁ ((zero , suc x) , tt , x' , y)
+tri-choice-step-c2 {n} p (x , (y , z)) (inj₂ y') = inj₂ (suc x , y , lem)
+  where
+    lem : (j : Fin (suc n)) → (j ≢ suc x) → ¬ T (p j)
+    lem zero p' = y'
+    lem (suc i) p' = z i (λ k → p' (cong suc k))
+tri-choice-step-c3 : ∀ {n} (p : Fin (suc n) → Bool) → ((k : Fin n) → ¬ T (p (suc k)))
+                   → T (p zero) ⊎ ¬ (T (p zero)) → ψ₂ p ⊎ ψ₃ p
+tri-choice-step-c3 {n} p anz (inj₁ x) = inj₁ (zero , x , lem)
+  where
+    lem : (j : Fin (suc n)) → (j ≢ zero) → ¬ (T ( (p j)))
+    lem zero p' = ⊥-elim (p' refl)
+    lem (suc i) p' = anz i
+tri-choice-step-c3 {n} p anz (inj₂ y) = inj₂ lem
+  where
+    lem : (k : Fin (suc n)) → ¬ (T ( (p k)))
+    lem zero = y
+    lem (suc i) = anz i
+    
+tri-choice-step : {n : ℕ} → (p : Fin (suc n) → Bool) → ψ (p ∘ suc) → ψ p
+tri-choice-step p (inj₁ ((x , y) , q)) = inj₁ ((suc x , suc y) , q)
+tri-choice-step p (inj₂ (inj₁ x)) = Sum.map id inj₁ $ tri-choice-step-c2 p x (ex-mid (p zero))
+tri-choice-step p (inj₂ (inj₂ y)) = inj₂ $ tri-choice-step-c3 p y (ex-mid (p zero))
+
+tri-choice : {n : ℕ} → (p : Fin n → Bool) → ψ p
+tri-choice {zero} p = inj₂ (inj₂ (λ ()))
+tri-choice {suc n} p = tri-choice-step p (tri-choice {n} (p ∘ suc))
+
+isZero : {n : ℕ} → Fin n → Bool
+isZero zero = true
+isZero (suc i) = false
+
+lem-iszero : {n : ℕ} → {x : Fin (suc n)} → T (isZero x) → x ≡ zero
+lem-iszero {_} {zero} p = refl
+lem-iszero {_} {suc i} ()
+
+fin1-eq : {a b : Fin 1} → a ≡ b
+fin1-eq {zero} {zero} = refl
+fin1-eq {suc ()}
+fin1-eq {_} {suc ()}
+
+pred' : {n : ℕ} → Fin (suc (suc n)) → Fin (suc n)
+pred' zero = zero
+pred' (suc i) = i
+
+lem-pred' : ∀ {n} {a b : Fin (suc (suc n))} (anz : ¬ T ( (isZero a))) (bnz : ¬ T ( (isZero b)))
+                  → pred' a ≡ pred' b → a ≡ b
+lem-pred' {n} {zero} {b} anz bnz p = ⊥-elim $ anz tt
+lem-pred' {n} {suc i} {zero} anz bnz p = ⊥-elim $ bnz tt
+lem-pred' {n} {suc i} {suc i'} anz bnz p = cong suc p
+
+-- inject suc
+is : ∀ {n} (k : Fin (suc n)) x → T (flt (inject₁ x) k) ⊎ ¬ (T (flt (inject₁ x) k)) → Fin (suc n)
+is k x (inj₁ x<k) = inject₁ x
+is k x (inj₂ x>=k) = suc x
+
+lem-is-mono : ∀ {n} (k : Fin (suc n)) (a b : Fin n)
+            → (p : T (flt (inject₁ a) k) ⊎ ¬ T (flt (inject₁ a) k))
+            → (q : T (flt (inject₁ b) k) ⊎ ¬ T (flt (inject₁ b) k))
+            → T (flt a b) → T (flt (is k a p) (is k b q))
+lem-is-mono k a b (inj₁ a<k) (inj₁ b<k) a<b rewrite toℕ-inj-eq a 1 _ refl 0 _ refl
+            | toℕ-inj-eq b 1 _ refl 0 _ refl = a<b
+lem-is-mono k a b (inj₁ a<k) (inj₂ b>=k) a<b rewrite toℕ-inj-eq a 1 _ refl 0 _ refl
+            = <-rsuc _ (toℕ b) a<b
+lem-is-mono {n} k a b (inj₂ a≮k) (inj₁ b<k) a<b rewrite toℕ-inj-eq a 1 _ refl 0 _ refl
+            | toℕ-inj-eq b 1 _ refl 0 _ refl
+            = ⊥-elim $ <-¬' (toℕ b) (toℕ a)
+                     (<-trans' _ (toℕ k) (suc _) b<k (<-¬ (toℕ a) (toℕ k) a≮k))
+                     (<-rsuc (toℕ a) _ a<b)
+lem-is-mono k a b (inj₂ a>=k) (inj₂ b>=k) a<b = a<b
+
+lem-is-not-k : ∀ {n} {j} {k : Fin (suc n)} (p : T (flt (inject₁ j) k) ⊎ ¬ (T (flt (inject₁ j) k)))
+                     → (is k j p) ≢ k
+lem-is-not-k {n} {j} (inj₁ x) refl = <-¬refl (toℕ (inject₁ j)) x
+lem-is-not-k {n} {j} {._} (inj₂ y) refl rewrite toℕ-inj-eq j 1 _ refl 0 _ refl = y (<-ord (toℕ j))
+
+lem-is-not-zero : {n m : ℕ} (f : Fin (suc n) → Fin (suc m)) (c2 : ψ₂ (isZero ∘ f)) (j : Fin n)
+                            → ¬ T (isZero (f (is (proj₁ c2) j (ex-mid (flt (inject₁ j) (proj₁ c2))))))
+lem-is-not-zero f (k , kz , jnz) j = jnz (is k j (ex-mid ((flt (inject₁ j) k))))
+                            (lem-is-not-k {_} {j} (ex-mid (flt (inject₁ j) k)))
+                            
+lem-reduce-f : {n m : ℕ} (f : Fin (suc (suc n)) → Fin (suc (suc m))) (point : Fin (suc (suc n)))
+                      → Fin (suc n) → Fin (suc m)
+lem-reduce-f f p k = pred' (f (is p k (ex-mid (nlt (toℕ (inject₁ k)) (toℕ p)))))
+
+lem-pidgen-c2 : (n m : ℕ)
+              → T (nlt (suc (suc m)) (suc (suc n)))
+              → (f : Fin (suc (suc n)) → Fin (suc (suc m)))
+              → (c2 : ψ₂ (isZero ∘ f))
+              → Pigeon (lem-reduce-f f (proj₁ c2))
+              → Pigeon f
+lem-pidgen-c2 n m nlt f (k' , k'z , jnz) ((k , l) , k<l , eq)
+               = (is k' k (ex-mid (flt (inject₁ k) k'))
+              , is k' l (ex-mid (flt (inject₁ l) k')))
+              , lem-is-mono k' k l (ex-mid (flt (inject₁ k) k'))
+              (ex-mid (flt (inject₁ l) k')) k<l
+              , lem-pred' (lem-is-not-zero f (k' , k'z , jnz) k)
+              (lem-is-not-zero f (k' , k'z , jnz) l) eq
+              
+lem-pidgen-c3 : (n m : ℕ)
+              → T (nlt (suc (suc m)) (suc (suc n)))
+              → (f : Fin (suc (suc n)) → Fin (suc (suc m)))
+              → (c3 : ψ₃ (isZero ∘ f))
+              → Pigeon (pred' ∘ f ∘ inject₁)
+              → Pigeon f
+              
+lem-pidgen-c3 n m nlt f c3 ((k , l) , k<l , eq) rewrite toℕ-inj-eq k 0 _ refl 1 _ refl
+              | toℕ-inj-eq l 0 _ refl 1 _ refl
+              = (inject₁ k , inject₁ l) , k<l , lem-pred' (c3 (inject₁ k)) (c3 (inject₁ l)) eq
+              
+mutual
+  pidgen' : (n m : ℕ) → T (nlt m n) → (f : Fin (suc n) → Fin (suc m)) → Pigeon f
+  pidgen' zero zero () f
+  pidgen' (suc n) zero p f = (zero , (suc zero)) , tt , fin1-eq
+  pidgen' zero (suc n') () f
+  pidgen' (suc n) (suc m) nlt f = lem-pidgen n m nlt f (tri-choice (isZero ∘ f))
+  
+  lem-pidgen : ∀ n m → T (nlt m n) → (f : Fin (suc (suc n)) → Fin (suc (suc m))) → ψ (isZero ∘ f)
+             → Pigeon f
+  lem-pidgen n m nlt f (inj₁ ((k , l) , k<l , kz , lz))
+             = (k , l)
+               , k<l
+               , subst (λ j → f k ≡ j) (sym (lem-iszero lz))
+               (subst (λ j → j ≡ zero) (sym (lem-iszero kz)) refl)
+  lem-pidgen n m nlt f (inj₂ (inj₁ c2)) = lem-pidgen-c2 n m nlt f c2
+               (pidgen' n m nlt (lem-reduce-f f (proj₁ c2)))
+  lem-pidgen n m nlt f (inj₂ (inj₂ c3)) = lem-pidgen-c3 n m nlt f c3
+               (pidgen' n m nlt (λ z → pred' (f (inject₁ z))))
+               
+pigeon : (n m : ℕ) → T (nlt m n) → (f : Fin n → Fin m) → Pigeon f
+pigeon zero m () f
+pigeon (suc n) (suc m) p f = pidgen' n m p f
+pigeon (suc n) zero p f with f zero ; ...| ()

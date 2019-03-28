@@ -1,0 +1,94 @@
+-- open import Data.Nat
+-- open import Data.Bool
+
+
+data ℕ : Set where -- \bN \omega ω Ω λ 
+  zero : ℕ
+  suc : ℕ → ℕ -- \to -> \-> →
+
+data Bool : Set where
+  true : Bool
+  false : Bool
+
+
+-- C-c C-l
+
+three : ℕ
+three = suc (suc (suc zero)) -- C-c C-SPC
+-- refine C-c C-r
+
+two : ℕ
+two = suc(suc(zero))
+
+fifteen : ℕ
+fifteen = suc(suc(suc(suc(suc(suc(suc(suc(suc(suc(suc(suc(suc(suc(suc zero))))))))))))))
+
+_+_ : ℕ → ℕ → ℕ
+zero + n = n
+suc m + n = suc (m + n)
+
+_*_ : ℕ → ℕ → ℕ
+zero * n = zero
+suc m * n = n + (m * n)
+
+-- _+_ 3 4
+-- 3 + 4
+
+-- exercise
+
+max : ℕ → ℕ → ℕ
+max zero y = y
+max x zero = x
+max (suc x) (suc y) = suc (max x y)
+
+{-sub : ℕ → ℕ → ℕ
+sub x zero = x
+sub zero y = zero
+sub (suc x) (suc y) = sub x y-}
+
+_-_ : ℕ → ℕ → ℕ
+x - zero = x
+zero - y = zero
+(suc x) - (suc y) = x - y
+
+eq : ℕ → ℕ → Bool
+eq zero zero = true
+eq (suc x) zero = false
+eq zero (suc y) = false
+eq (suc x) (suc y) = eq x y
+
+div2 : ℕ → ℕ
+div2 zero = zero
+div2 (suc zero) = zero
+div2 (suc (suc x)) = suc (div2 x)
+
+-- C-c C-n
+
+div3 : ℕ → ℕ
+div3 zero = zero
+div3 (suc zero) = zero
+div3 (suc (suc zero)) = zero
+div3 (suc (suc (suc x))) = suc (div3 x)
+
+rem2 : ℕ → Bool -- true if remainder is 1, false otherwise
+rem2 zero = false
+rem2 (suc zero) = true
+rem2 (suc (suc x)) = rem2 x
+
+
+_&&_ : Bool → Bool → Bool
+b && true = b
+b && false = false
+
+infixl 50 _&&_
+
+power : ℕ → ℕ → ℕ
+power x zero = suc zero
+power x (suc y) = x * (power x y)
+
+factorial : ℕ → ℕ
+factorial zero = suc zero
+factorial (suc x) = (suc x) * factorial x
+
+
+
