@@ -37,7 +37,7 @@ php [] () -- Doesn't work if the vector is wempty
 php (zero ∷ v) nlv =  suc (proj₁ ih) , proj₂ ih
     where
       --ih = php v (lemma _ _ nlv)
-      ih = php v (lemma ? ? ?)
+      ih = php v (lemma {!!} {!!} {!!})
 
 php (suc zero ∷ v) (suclt nlv) = (suc (proj₁ ih2)) , (proj₂ ih2)
     where
